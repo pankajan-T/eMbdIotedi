@@ -1,5 +1,6 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -25,6 +26,7 @@ void loop() {
   mqttClient.loop();
   //publishing for temperature sensor value to mqtt
   mqttClient.publish("ENTC-TEMP","25.24");
+  delay(500);
   
 
 
@@ -32,8 +34,10 @@ void loop() {
 
 
 void connectToBroker(){
+
+//************Making sure Mqtt is connected
   while(!mqttClient.connected()){
-    Serial.print("Attempting MQTT connection....");
+    Serial.print("\n Attempting MQTT connection....");
     if(mqttClient.connect("ESP32-4635")){
 
       Serial.println("connected");
@@ -46,16 +50,29 @@ void connectToBroker(){
     }
 
   }
+//*********************************************
 
 
 }
 
 void setupWiFi(){
 
+WiFi.begin("Wokwi-GUEST","");
+while(WiFi.status() != WL_CONNECTED){
+delay(500);
+Serial.print(".");
+
+
+}
+Serial.println("Connected...!!!");
+Serial.println(WiFi.localIP());
+
+
 }
 
 void setupMqtt(){
 
+  mqttClient.setServer("test.mosquitto.org",1883);
 
 
 }
