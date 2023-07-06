@@ -56,6 +56,8 @@ void connectToBroker(){
     if(mqttClient.connect("ESP32-4635")){
 
       Serial.println("connected");
+      mqttClient.subscribe("ENTC-ON-OFF");
+
 
     }
     else{
@@ -88,7 +90,7 @@ Serial.println(WiFi.localIP());
 void setupMqtt(){
 
   mqttClient.setServer("test.mosquitto.org",1883);
-
+  mqttClient.setCallback(recieveCallback);
 
 }
 
@@ -97,6 +99,28 @@ void updateTemperature(){
 
 TempAndHumidity data = dhtSensor.getTempAndHumidity();
 String(data.temperature,2).toCharArray(tempAr,6);
+
+
+}
+
+
+
+/// recieved message from the node red to esp32
+
+void recieveCallback(char* topic, byte* payload, unsigned int length){
+
+  Serial.print("message arrived[");
+  Serial.println(topic);
+  Serial.print("]");
+
+
+  char payloadCharAr[length];
+
+  for(int i=0; i<length;i++){
+  payloadCharAr[i] = (char)payload[i];
+  Serial.print((char)payload[i]);
+
+  }
 
 
 }
