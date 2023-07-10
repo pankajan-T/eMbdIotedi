@@ -4,24 +4,44 @@
 #include <WiFi.h>
 //#include <WiFiManager.h>
 #include "DHTesp.h"
+
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+
+
+//#include <iostream>
+//#include<string>
 
 //////////////////////
 
 //Special declarations
+
+//Wifi client delcarations
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
+
+// DHT humid&Temp sensor decalarations
 const int DHT_PIN = 15;
+
 DHTesp dhtSensor;
 char tempAr[6];
 char humAr[6];
 
+
+//Wifi NTP client declaration
 WiFiUDP udp;
 NTPClient timeClient(udp);
 
+// Buzzer decalarations
+const int Buzzer_PIN = 2;
+unsigned int frequency = 256;
+unsigned long duration = 10; 
+
 //////////////////////
+
+
+using namespace std;
 
 void setup() {
   Serial.begin(115200);
@@ -32,6 +52,8 @@ void setup() {
   timeClient.begin();
 
   dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
+
+  pinMode(Buzzer_PIN, OUTPUT);    
 
  
 }
@@ -45,7 +67,7 @@ void loop() {
   }
 
   timeClient.update();
-  Serial.println(timeClient.getFormattedTime());
+  //Serial.println(timeClient.getFormattedTime());
 
 
 
@@ -59,7 +81,10 @@ void loop() {
   mqttClient.publish("ENTC-HUM",humAr);
 
   delay(500);
-  
+
+
+
+  tone(Buzzer_PIN, frequency, duration);
 
 
 }
@@ -74,7 +99,8 @@ void connectToBroker(){
 
       Serial.println("connected");
       mqttClient.subscribe("ENTC-ON-OFF");
-
+      mqttClient.subscribe("BuzzerFreq");
+      mqttClient.subscribe("BuzzerDur");
 
     }
     else{
@@ -140,6 +166,15 @@ void recieveCallback(char* topic, byte* payload, unsigned int length){
   for(int i=0; i<length;i++){
   payloadCharAr[i] = (char)payload[i];
   Serial.print((char)payload[i]);
+
+  if(topic == "BuzzerFreq"){
+    frequency =atoi(payloadCharAr);
+
+  }
+  else if(topic == "BuzzerDur"){
+    duration = atoi(payloadCharAr);
+
+  }
 
   }
 
