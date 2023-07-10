@@ -29,6 +29,7 @@ const int DHT_PIN = 15;
 DHTesp dhtSensor;
 char tempAr[6];
 char humAr[6];
+char LDRAr[6];
 
 
 //Wifi NTP client declaration
@@ -45,7 +46,10 @@ unsigned long duration = 10;
 
 LiquidCrystal_I2C lcd (0x27, 16,2);
 
+///////LDR declaration
 
+const int LDRPIN = 34;
+float LDRValue;
 
 
 
@@ -100,11 +104,19 @@ void loop() {
 
   mqttClient.loop();
 
+  Serial.println(analogRead(LDRPIN));
+  //LDR read
+  LDRValue = analogRead(LDRPIN)/4095.0;
+  updateLDR();
+
 
   //publishing for temperature sensor value to mqtt
   updateTemperatureandHumidity();
   mqttClient.publish("ENTC-TEMP",tempAr);
   mqttClient.publish("ENTC-HUM",humAr);
+  
+  //publish LDR ~light intensity
+  mqttClient.publish("LDR",LDRAr);
 
   delay(500);
 
@@ -116,9 +128,13 @@ void loop() {
   lcd.print("`C  ");
 
   lcd.print(humAr);
-  //lcd. print ( " - SECONDS" );
-  Alarmcheck();
+  
 
+  Alarmcheck();
+  
+
+ 
+  
   
 
 
@@ -182,7 +198,11 @@ String(data.humidity,2).toCharArray(humAr,6);
 
 }
 
+void updateLDR(){
 
+String(LDRValue,2).toCharArray(LDRAr,6);
+
+}
 
 
 
