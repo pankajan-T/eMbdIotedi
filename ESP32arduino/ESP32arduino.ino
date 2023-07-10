@@ -45,6 +45,20 @@ unsigned long duration = 10;
 
 LiquidCrystal_I2C lcd (0x27, 16,2);
 
+
+
+
+
+//////////////////////Alarm declarations
+
+///1st slot
+
+int hour[3]={17,0,0};
+int minuite[3]={26,0,0};
+int slot[3]={1,0,0};
+
+
+
 //////////////////////
 
 
@@ -65,7 +79,7 @@ void setup() {
 
   lcd.init();
   lcd. backlight ();
-  lcd. print ( "CIRCUITSCHOOLS." );    
+  
 
  
 }
@@ -94,13 +108,18 @@ void loop() {
 
   delay(500);
 
-  lcd. setCursor (0, 1);
+  lcd. setCursor (0, 0);
    // We write the number of seconds elapsed 
-  lcd. print ( millis () / 1000);
-  lcd. print ( " - SECONDS" );
+  lcd. print (timeClient.getFormattedTime());
+  lcd.setCursor(0,1);
+  lcd.print(tempAr);
+  lcd.print("`C  ");
 
+  lcd.print(humAr);
+  //lcd. print ( " - SECONDS" );
+  Alarmcheck();
 
-  tone(Buzzer_PIN, frequency, duration);
+  
 
 
 }
@@ -191,6 +210,33 @@ void recieveCallback(char* topic, byte* payload, unsigned int length){
     duration = atoi(payloadCharAr);
 
   }
+
+  }
+
+
+}
+
+
+void Alarmcheck(){
+
+
+  int currentHour = timeClient.getHours();
+  int currentMin = timeClient.getMinutes();
+ 
+
+  for(int i =0; i<3;i++){
+    
+    if(slot[i]==1){
+      if(hour[i]==currentHour && minuite[i]==currentMin){
+      Serial.println("Alarm");
+      tone(Buzzer_PIN, frequency, duration);
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Time For Pill!");
+      break;
+      }
+    }
+
 
   }
 
