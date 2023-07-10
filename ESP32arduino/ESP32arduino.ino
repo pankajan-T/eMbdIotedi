@@ -11,6 +11,9 @@
 
 #include <LiquidCrystal_I2C.h>
 
+#include <ESP32Servo.h>
+
+
 //#include <iostream>
 //#include<string>
 
@@ -52,6 +55,11 @@ const int LDRPIN = 34;
 float LDRValue;
 
 
+#define SERVO_PIN 26 // ESP32 pin GIOP26 connected to servo motor
+Servo servoMotor;
+float pos;
+float offset = 30.0;
+float cntFact = 0.75;
 
 //////////////////////Alarm declarations
 
@@ -68,6 +76,8 @@ int slot[3]={1,0,0};
 
 using namespace std;
 
+
+
 void setup() {
   Serial.begin(115200);
   setupWiFi();
@@ -83,6 +93,8 @@ void setup() {
 
   lcd.init();
   lcd. backlight ();
+
+  servoMotor.attach(SERVO_PIN);
   
 
  
@@ -133,6 +145,8 @@ void loop() {
   Alarmcheck();
   
 
+  pos = offset+(180-offset)*LDRValue*cntFact;
+  servoMotor.write(pos);
  
   
   
