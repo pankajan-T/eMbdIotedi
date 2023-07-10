@@ -9,6 +9,8 @@
 #include <WiFiUdp.h>
 
 
+#include <LiquidCrystal_I2C.h>
+
 //#include <iostream>
 //#include<string>
 
@@ -38,6 +40,11 @@ const int Buzzer_PIN = 2;
 unsigned int frequency = 256;
 unsigned long duration = 10; 
 
+
+//LCD I2C declaration
+
+LiquidCrystal_I2C lcd (0x27, 16,2);
+
 //////////////////////
 
 
@@ -53,7 +60,12 @@ void setup() {
 
   dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
 
-  pinMode(Buzzer_PIN, OUTPUT);    
+  pinMode(Buzzer_PIN, OUTPUT);
+
+
+  lcd.init();
+  lcd. backlight ();
+  lcd. print ( "CIRCUITSCHOOLS." );    
 
  
 }
@@ -82,6 +94,10 @@ void loop() {
 
   delay(500);
 
+  lcd. setCursor (0, 1);
+   // We write the number of seconds elapsed 
+  lcd. print ( millis () / 1000);
+  lcd. print ( " - SECONDS" );
 
 
   tone(Buzzer_PIN, frequency, duration);
