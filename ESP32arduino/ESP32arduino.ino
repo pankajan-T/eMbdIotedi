@@ -116,7 +116,7 @@ void loop() {
 
   mqttClient.loop();
 
-  Serial.println(analogRead(LDRPIN));
+
   //LDR read
   LDRValue = analogRead(LDRPIN)/4095.0;
   updateLDR();
@@ -147,7 +147,9 @@ void loop() {
 
   pos = offset+(180-offset)*LDRValue*cntFact;
   servoMotor.write(pos);
- 
+  
+
+  //Serial.println(pos);
   
   
 
@@ -166,7 +168,8 @@ void connectToBroker(){
       mqttClient.subscribe("ENTC-ON-OFF");
       mqttClient.subscribe("BuzzerFreq");
       mqttClient.subscribe("BuzzerDur");
-
+      mqttClient.subscribe("Offseter");
+      mqttClient.subscribe("cntFactor");
     }
     else{
       Serial.println("failed");
@@ -223,7 +226,7 @@ String(LDRValue,2).toCharArray(LDRAr,6);
 
 /// recieved message from the node red to esp32
 
-void recieveCallback(char* topic, byte* payload, unsigned int length){
+void recieveCallback(String topic, byte* payload, unsigned int length){
 
   Serial.print("message arrived[");
   Serial.print(topic);
@@ -235,17 +238,27 @@ void recieveCallback(char* topic, byte* payload, unsigned int length){
   for(int i=0; i<length;i++){
   payloadCharAr[i] = (char)payload[i];
   Serial.print((char)payload[i]);
+  }
+  //Serial.println(topic == "BuzzerFreq");
 
   if(topic == "BuzzerFreq"){
     frequency =atoi(payloadCharAr);
-
+    //Serial.println("test");
   }
   else if(topic == "BuzzerDur"){
     duration = atoi(payloadCharAr);
 
   }
 
+  else if(topic == "Offseter"){
+    offset = atoi(payloadCharAr);
+    //Serial.println("test");
   }
+  else if(topic == "cntFactor"){
+    cntFact = atoi(payloadCharAr);
+  }
+
+  
 
 
 }
