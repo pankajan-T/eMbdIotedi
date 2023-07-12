@@ -63,13 +63,17 @@ float cntFact = 0.75;
 
 //////////////////////Alarm declarations
 
-///1st slot
+
 
 int hour[3]={17,0,0};
 int minuite[3]={26,0,0};
 int slot[3]={1,0,0};
 
+bool AlarmOnOff = 1;
 
+int alarming=0;
+int alarminuite =00;
+int buzzerType =0;
 
 //////////////////////
 
@@ -141,9 +145,9 @@ void loop() {
 
   lcd.print(humAr);
   
-
+  if(AlarmOnOff){
   Alarmcheck();
-  
+  }
 
   pos = offset+(180-offset)*LDRValue*cntFact;
   servoMotor.write(pos);
@@ -170,6 +174,18 @@ void connectToBroker(){
       mqttClient.subscribe("BuzzerDur");
       mqttClient.subscribe("Offseter");
       mqttClient.subscribe("cntFactor");
+
+      mqttClient.subscribe("scheduleOnOff");
+      mqttClient.subscribe("days");
+      mqttClient.subscribe("slot1switch");
+      mqttClient.subscribe("slot2switch");
+      mqttClient.subscribe("slot1time");
+      mqttClient.subscribe("slot2time");
+      mqttClient.subscribe("slot3switch");
+      mqttClient.subscribe("slot3time");
+      mqttClient.subscribe("buzzerType");
+
+
     }
     else{
       Serial.println("failed");
@@ -228,6 +244,8 @@ String(LDRValue,2).toCharArray(LDRAr,6);
 
 void recieveCallback(String topic, byte* payload, unsigned int length){
 
+  int temphour;
+
   Serial.print("message arrived[");
   Serial.print(topic);
   Serial.print("]");
@@ -258,10 +276,101 @@ void recieveCallback(String topic, byte* payload, unsigned int length){
     cntFact = atoi(payloadCharAr);
   }
 
+  else if(topic == "days"){
+    cntFact = atoi(payloadCharAr);
+  }
+
+else if(topic == "slot1switch"){
+  if(atoi(payloadCharAr)==1){
+    slot[0] = 1;
+  }
+
+  else if(atoi(payloadCharAr)==0){
+    slot[0] = 0;
+  }
+  
+  
+  }
+
+else if(topic == "slot1time"){
+    temphour = atoi(payloadCharAr)/100;
+    hour[0] = temphour;
+
+    minuite[0] = atoi(payloadCharAr) -temphour;
+
+  }
+
+else if(topic == "slot2switch"){
+  if(atoi(payloadCharAr)==1){
+    slot[1] = 1;
+  }
+
+  else if(atoi(payloadCharAr)==0){
+    slot[1] = 0;
+  }
+  
+  }
+
+else if(topic == "slot2time"){
+  temphour = atoi(payloadCharAr)/100;
+    hour[1] = temphour;
+
+    minuite[1] = atoi(payloadCharAr) -temphour;
+    
+  }
+
+else if(topic == "slot3switch"){
+  if(atoi(payloadCharAr)==1){
+    slot[2] = 1;
+  }
+
+  else if(atoi(payloadCharAr)==0){
+    slot[2] = 0;
+  }
+  
+  }
+
+else if(topic == "slot3time"){
+  temphour = atoi(payloadCharAr)/100;
+    hour[2] = temphour;
+
+    minuite[2] = atoi(payloadCharAr) -temphour;
+    
+  }
+
+else if(topic == "scheduleOnOff"){
+    
+
+if(atoi(payloadCharAr)==1){
+    AlarmOnOff = 1;
+  }
+
+  else if(atoi(payloadCharAr)==0){
+    AlarmOnOff =0;
+  }
+  
+  }
+
+  else if(topic == "buzzerType"){
+    
+
+if(atoi(payloadCharAr)==1){
+    buzzerType =0;
+  }
+
+  else if(atoi(payloadCharAr)==0){
+    buzzerType =1;
+  }
+  
+  }
+    
+  }
+
+
   
 
 
-}
+
 
 
 void Alarmcheck(){
@@ -276,15 +385,31 @@ void Alarmcheck(){
     if(slot[i]==1){
       if(hour[i]==currentHour && minuite[i]==currentMin){
       Serial.println("Alarm");
+      if(buzzerType ==0;){
       tone(Buzzer_PIN, frequency, duration);
+      }
+      else{
+        digitalWrite(Buzzer_PIN,HIGH);
+      }
       lcd.clear();
       lcd.setCursor(0,0);
       lcd.print("Time For Pill!");
+      alarminuite =currentMin;
+
+      alarming=1;
+
       break;
       }
     }
 
 
+  }
+
+  if(currentMin==alarminuite+2){
+
+    lcd.clear();
+    digitalWrite(Buzzer_PIN,LOW);
+    alarming=0;
   }
 
 
