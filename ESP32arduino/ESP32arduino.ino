@@ -32,12 +32,17 @@ const int DHT_PIN = 15;
 DHTesp dhtSensor;
 char tempAr[6];
 char humAr[6];
+
+
 char LDRAr[6];
+
+
+char daysAr[6];
 
 
 //Wifi NTP client declaration
 WiFiUDP udp;
-NTPClient timeClient(udp);
+NTPClient timeClient(udp, "lk.pool.ntp.org", 530*6*6,30000);
 
 // Buzzer decalarations
 const int Buzzer_PIN = 2;
@@ -63,7 +68,7 @@ float cntFact = 0.75;
 
 //////////////////////Alarm declarations
 
-
+int mainswitch =1;
 
 int hour[3]={17,0,0};
 int minuite[3]={26,0,0};
@@ -74,6 +79,8 @@ bool AlarmOnOff = 1;
 int alarming=0;
 int alarminuite =00;
 int buzzerType =0;
+
+int days = 5;
 
 //////////////////////
 
@@ -89,6 +96,7 @@ void setup() {
 
 
   timeClient.begin();
+  timeClient.setTimeOffset(19080);
 
   dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
 
@@ -125,6 +133,10 @@ void loop() {
   LDRValue = analogRead(LDRPIN)/4095.0;
   updateLDR();
 
+  //main swithc
+
+  if(mainswitch==1){
+
 
   //publishing for temperature sensor value to mqtt
   updateTemperatureandHumidity();
@@ -134,7 +146,6 @@ void loop() {
   //publish LDR ~light intensity
   mqttClient.publish("LDR",LDRAr);
 
-  delay(500);
 
   lcd. setCursor (0, 0);
    // We write the number of seconds elapsed 
@@ -155,9 +166,13 @@ void loop() {
 
   //Serial.println(pos);
   
-  
+  //tone(Buzzer_PIN, frequency, duration);
 
-
+  }
+  else{
+   lcd. setCursor (0, 0);
+   lcd.print("Main Switch Off");
+  }
 }
 
 
@@ -184,6 +199,7 @@ void connectToBroker(){
       mqttClient.subscribe("slot3switch");
       mqttClient.subscribe("slot3time");
       mqttClient.subscribe("buzzerType");
+      mqttClient.subscribe("Mainswitch");
 
 
     }
@@ -248,7 +264,7 @@ void recieveCallback(String topic, byte* payload, unsigned int length){
 
   Serial.print("message arrived[");
   Serial.print(topic);
-  Serial.print("]");
+  Serial.print("]  - ");
 
 
   char payloadCharAr[length];
@@ -277,15 +293,15 @@ void recieveCallback(String topic, byte* payload, unsigned int length){
   }
 
   else if(topic == "days"){
-    cntFact = atoi(payloadCharAr);
+    days = atoi(payloadCharAr);
   }
 
 else if(topic == "slot1switch"){
-  if(atoi(payloadCharAr)==1){
+  if((char)payload[0]=='1'){
     slot[0] = 1;
   }
 
-  else if(atoi(payloadCharAr)==0){
+  else if((char)payload[0]=='0'){
     slot[0] = 0;
   }
   
@@ -293,19 +309,23 @@ else if(topic == "slot1switch"){
   }
 
 else if(topic == "slot1time"){
+  //Serial.println(atoi(payloadCharAr));
     temphour = atoi(payloadCharAr)/100;
     hour[0] = temphour;
 
-    minuite[0] = atoi(payloadCharAr) -temphour;
+    minuite[0] = atoi(payloadCharAr) -temphour*100;
 
   }
 
 else if(topic == "slot2switch"){
-  if(atoi(payloadCharAr)==1){
+
+ 
+  if((char)payload[0]=='1'){
+   
     slot[1] = 1;
   }
 
-  else if(atoi(payloadCharAr)==0){
+  else if((char)payload[0]=='0'){
     slot[1] = 0;
   }
   
@@ -315,16 +335,17 @@ else if(topic == "slot2time"){
   temphour = atoi(payloadCharAr)/100;
     hour[1] = temphour;
 
-    minuite[1] = atoi(payloadCharAr) -temphour;
+    minuite[1] = atoi(payloadCharAr) -temphour*100;
+
     
   }
 
 else if(topic == "slot3switch"){
-  if(atoi(payloadCharAr)==1){
+  if((char)payload[0]=='1'){
     slot[2] = 1;
   }
 
-  else if(atoi(payloadCharAr)==0){
+  else if((char)payload[0]=='0'){
     slot[2] = 0;
   }
   
@@ -334,18 +355,19 @@ else if(topic == "slot3time"){
   temphour = atoi(payloadCharAr)/100;
     hour[2] = temphour;
 
-    minuite[2] = atoi(payloadCharAr) -temphour;
+    minuite[2] = atoi(payloadCharAr) -temphour*100;
+
     
   }
 
 else if(topic == "scheduleOnOff"){
     
 
-if(atoi(payloadCharAr)==1){
+if((char)payload[0]=='1'){
     AlarmOnOff = 1;
   }
 
-  else if(atoi(payloadCharAr)==0){
+  else if((char)payload[0]=='0'){
     AlarmOnOff =0;
   }
   
@@ -354,13 +376,26 @@ if(atoi(payloadCharAr)==1){
   else if(topic == "buzzerType"){
     
 
-if(atoi(payloadCharAr)==1){
-    buzzerType =0;
-  }
-
-  else if(atoi(payloadCharAr)==0){
+if((char)payload[0]=='1'){
     buzzerType =1;
   }
+
+  else if((char)payload[0]=='0'){
+    buzzerType =0;
+  }
+  
+  }
+
+
+  else if(topic == "Mainswitch"){
+  if((char)payload[0]=='1'){
+    mainswitch = 1;
+  }
+
+  else if((char)payload[0]=='0'){
+    mainswitch = 0;
+  }
+  
   
   }
     
@@ -379,17 +414,21 @@ void Alarmcheck(){
   int currentHour = timeClient.getHours();
   int currentMin = timeClient.getMinutes();
  
-
+  if( days > 0){
   for(int i =0; i<3;i++){
     
     if(slot[i]==1){
       if(hour[i]==currentHour && minuite[i]==currentMin){
       Serial.println("Alarm");
-      if(buzzerType ==0;){
+      if(buzzerType ==0){
+        //Serial.println("Test");
       tone(Buzzer_PIN, frequency, duration);
+      delay(500);
       }
       else{
         digitalWrite(Buzzer_PIN,HIGH);
+        tone(Buzzer_PIN, 1, duration);
+        
       }
       lcd.clear();
       lcd.setCursor(0,0);
@@ -404,13 +443,33 @@ void Alarmcheck(){
 
 
   }
+  }
 
-  if(currentMin==alarminuite+2){
+  
+  
+  
+/////After sometime stop the alarm
+  if(currentMin==alarminuite+duration && alarming ==1){
 
     lcd.clear();
     digitalWrite(Buzzer_PIN,LOW);
     alarming=0;
   }
 
+
+
+////// days update
+
+if(currentHour ==0 && currentMin==0 && days >=0){
+  days = days-1;
+  String(days,1).toCharArray(daysAr,6);
+
+  mqttClient.publish("daysIn",daysAr);
+  
+
+
+
+
+}
 
 }
